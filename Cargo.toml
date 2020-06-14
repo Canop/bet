@@ -1,0 +1,11 @@
+[package]
+name = "bet"
+version = "0.1.0"
+authors = ["dystroy <denys.seguret@gmail.com>"]
+edition = "2018"
+keywords = ["binary", "expression", "tree", "parser"]
+license = "MIT"
+categories = ["data-structures", "parsing", "template-engine"]
+readme = "README.md"
+
+[dependencies]
