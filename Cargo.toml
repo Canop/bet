@@ -6,6 +6,7 @@ edition = "2018"
 keywords = ["binary", "expression", "tree", "parser"]
 license = "MIT"
 categories = ["data-structures", "parsing", "template-engine"]
+description = "Helps parsing and evaluating binary expression trees"
 readme = "README.md"
 
 [dependencies]
