@@ -12,7 +12,7 @@
 [s4]: https://miaou.dystroy.org/static/shields/room.svg
 [l4]: https://miaou.dystroy.org/3
 
-A simple binary expression tree, for parsing and preparing expressions which can be executed on dynamic contents.
+A simple binary expression tree library, for parsing and preparing expressions which can be executed on dynamic contents.
 
 # Example of parsing and evaluating a boolean expression
 

@@ -21,6 +21,16 @@ impl Child {
     }
 }
 
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum TokenType {
+    Nothing,
+    Atom,
+    Operator,
+    OpeningPar,
+    ClosingPar,
+}
+
 #[derive(Debug, Clone)]
 struct Node<Op>
 where
@@ -30,18 +40,6 @@ where
     parent: Option<usize>,
     left: Child,
     right: Child,
-}
-
-#[derive(Debug, Clone)]
-pub struct BeTree<Op, Atom>
-where
-    Op: fmt::Debug + Clone + PartialEq + Default,
-    Atom: fmt::Debug + Clone,
-{
-    atoms: Vec<Atom>,
-    nodes: Vec<Node<Op>>,
-    head: usize, // node index - where to start iterating
-    tail: usize, // node index - where to add new nodes
 }
 
 impl<Op> Node<Op>
@@ -61,18 +59,59 @@ where
     }
 }
 
+/// binary expression tree
+#[derive(Debug, Clone)]
+pub struct BeTree<Op, Atom>
+where
+    Op: fmt::Debug + Clone + PartialEq + Default,
+    Atom: fmt::Debug + Clone,
+{
+    atoms: Vec<Atom>,
+    nodes: Vec<Node<Op>>,
+    head: usize, // node index - where to start iterating
+    tail: usize, // node index - where to add new nodes
+    last_pushed: TokenType,
+}
+
+
+impl<Op, Atom> Default for BeTree<Op, Atom>
+where
+    Op: fmt::Debug + Clone + PartialEq + Default,
+    Atom: fmt::Debug + Clone,
+{
+    fn default() -> Self {
+        Self {
+            atoms: Vec::new(),
+            nodes: vec![Node::empty()],
+            head: 0,
+            tail: 0,
+            last_pushed: TokenType::Nothing,
+        }
+    }
+}
+
 impl<Op, Atom> BeTree<Op, Atom>
 where
     Op: fmt::Debug + Clone + PartialEq + Default,
     Atom: fmt::Debug + Clone,
 {
     pub fn new() -> Self {
-        Self {
-            atoms: Vec::new(),
-            nodes: vec![Node::empty()],
-            head: 0,
-            tail: 0,
-        }
+        Self::default()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.atoms.is_empty()
+    }
+    /// tell whether the tree is exactly one atom
+    pub fn is_atomic(&self) -> bool {
+        self.atoms.len() == 1
+    }
+    /// take the atoms of the tree
+    pub fn atoms(self) -> Vec<Atom> {
+        self.atoms
+    }
+    /// iterate on all atoms
+    pub fn iter_atoms<'a>(&'a self) -> std::slice::Iter<'a, Atom> {
+        self.atoms.iter()
     }
     fn store_node(&mut self, node: Node<Op>) -> usize {
         self.nodes.push(node);
@@ -95,6 +134,7 @@ where
         self.tail = child_idx;
     }
     pub fn push_atom(&mut self, atom: Atom) {
+        self.last_pushed = TokenType::Atom;
         let atom_idx = self.store_atom(atom);
         if !self.nodes[self.tail].left.is_some() {
             self.nodes[self.tail].left = Child::Atom(atom_idx);
@@ -102,11 +142,27 @@ where
             self.nodes[self.tail].right = Child::Atom(atom_idx);
         }
     }
+    /// if the last change was an atom pushed or modified, return a mutable
+    /// reference to this atom. If not, push a new atom and return a mutable
+    /// reference to it.
+    pub fn mutate_or_create_atom<Create>(&mut self, create: Create) -> &mut Atom
+    where
+        Create: Fn() -> Atom,
+    {
+        if self.last_pushed != TokenType::Atom {
+            self.push_atom(create());
+        }
+        self.atoms.last_mut().unwrap()
+    }
+    /// add an opening parenthesis to the expression
     pub fn open_par(&mut self) {
+        self.last_pushed = TokenType::OpeningPar;
         let node_idx = self.store_node(Node::empty());
         self.add_child_node(node_idx);
     }
+    /// add a closing parenthesis to the expression
     pub fn close_par(&mut self) {
+        self.last_pushed = TokenType::ClosingPar;
         if let Some(parent) = self.nodes[self.tail].parent {
             self.tail = parent;
         }
@@ -114,6 +170,7 @@ where
         // many closing parenthesis in the future
     }
     pub fn push_operator(&mut self, operator: Op) {
+        self.last_pushed = TokenType::Operator;
         if self.nodes[self.tail].is_full() {
             // we replace the current tail
             // which becomes the left child of the new node
@@ -149,7 +206,6 @@ where
 
     fn eval_child<EvalAtom, EvalOp, R>(&self, eval_atom: &EvalAtom, eval_op: &EvalOp, child: Child) -> Option<R>
     where
-        R: fmt::Debug,
         EvalAtom: Fn(&Atom) -> R,
         EvalOp: Fn(&Op, R, R) -> R,
     {
@@ -162,7 +218,6 @@ where
 
     fn eval_node<EvalAtom, EvalOp, R>(&self, eval_atom: &EvalAtom, eval_op: &EvalOp, node_idx: usize) -> Option<R>
     where
-        R: fmt::Debug,
         EvalAtom: Fn(&Atom) -> R,
         EvalOp: Fn(&Op, R, R) -> R,
     {
@@ -177,9 +232,11 @@ where
         }
     }
 
+    /// evaluate the expression.
+    /// `eval_atom` will be called on all atoms (leafs) of the expression while `eval_op`
+    /// will be used to join values until the final result is obtained.
     pub fn eval<EvalAtom, EvalOp, R>(&self, eval_atom: EvalAtom, eval_op: EvalOp) -> Option<R>
     where
-        R: fmt::Debug,
         EvalAtom: Fn(&Atom) -> R,
         EvalOp: Fn(&Op, R, R) -> R,
     {

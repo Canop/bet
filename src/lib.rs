@@ -1,10 +1,19 @@
-/*! A simple binary expression tree,
-for parsing and preparing expressions which can
-be executed on dynamic contents.
+/*! A simple binary expression tree, for parsing and preparing expressions which can be executed on dynamic contents.
 
-# Example of parsing and evaluating a boolean expression
+An expression is built by calling the `push_operator`, `open_par`, `close_par` and `push_atom` functions.
 
-In this example bet helps parsing the `"(A | B) & (C | D | E)"` expression
+It can then be evaluated with the `eval` function which takes as parameters
+
+* a function which gives a value to an atom
+* a function which, given an operator and two values, gives a new value
+
+Normal evaluation order is left to right but is modified with parenthesis.
+
+This library is very young. [Contact](https://miaou.dystroy.org/3768) me if you think it might be useful to you.
+
+# Example : parsing and evaluating boolean expressions
+
+Here we parse the `"(A | B) & (C | D | E)"` expression
 and evaluate it with different values of the `A` to `E` variables.
 
 Then two other expressions are evaluated to display how parenthesis and evaluation work.
