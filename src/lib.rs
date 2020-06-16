@@ -27,11 +27,6 @@ enum BoolOperator {
     And,
     Or,
 }
-impl Default for BoolOperator {
-    fn default() -> Self {
-        Self::And
-    }
-}
 impl BoolOperator {
     fn eval(self, a: bool, b: bool) -> bool {
         match self {

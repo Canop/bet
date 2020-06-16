@@ -21,7 +21,6 @@ impl Child {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum TokenType {
     Nothing,
@@ -34,9 +33,9 @@ enum TokenType {
 #[derive(Debug, Clone)]
 struct Node<Op>
 where
-    Op: fmt::Debug + Clone + PartialEq + Default,
+    Op: fmt::Debug + Clone + PartialEq,
 {
-    operator: Op,
+    operator: Option<Op>,
     parent: Option<usize>,
     left: Child,
     right: Child,
@@ -44,14 +43,15 @@ where
 
 impl<Op> Node<Op>
 where
-    Op: fmt::Debug + Clone + PartialEq + Default,
+    Op: fmt::Debug + Clone + PartialEq,
 {
+    /// a node is full when we can't add other childs
     fn is_full(&self) -> bool {
         self.right.is_some()
     }
     fn empty() -> Self {
         Self {
-            operator: Op::default(),
+            operator: None,
             parent: None,
             left: Child::None,
             right: Child::None,
@@ -63,7 +63,7 @@ where
 #[derive(Debug, Clone)]
 pub struct BeTree<Op, Atom>
 where
-    Op: fmt::Debug + Clone + PartialEq + Default,
+    Op: fmt::Debug + Clone + PartialEq,
     Atom: fmt::Debug + Clone,
 {
     atoms: Vec<Atom>,
@@ -76,7 +76,7 @@ where
 
 impl<Op, Atom> Default for BeTree<Op, Atom>
 where
-    Op: fmt::Debug + Clone + PartialEq + Default,
+    Op: fmt::Debug + Clone + PartialEq,
     Atom: fmt::Debug + Clone,
 {
     fn default() -> Self {
@@ -92,7 +92,7 @@ where
 
 impl<Op, Atom> BeTree<Op, Atom>
 where
-    Op: fmt::Debug + Clone + PartialEq + Default,
+    Op: fmt::Debug + Clone + PartialEq,
     Atom: fmt::Debug + Clone,
 {
     pub fn new() -> Self {
@@ -175,7 +175,7 @@ where
             // we replace the current tail
             // which becomes the left child of the new node
             let new_idx = self.store_node(Node {
-                operator,
+                operator: Some(operator),
                 parent: self.nodes[self.tail].parent,
                 left: Child::Node(self.tail),
                 right: Child::None,
@@ -200,7 +200,7 @@ where
             // and we update the tail
             self.tail = new_idx;
         } else {
-            self.nodes[self.tail].operator = operator;
+            self.nodes[self.tail].operator = Some(operator);
         }
     }
 
@@ -224,11 +224,15 @@ where
         let node = &self.nodes[node_idx];
         let left_value = self.eval_child(eval_atom, eval_op, node.left);
         let right_value = self.eval_child(eval_atom, eval_op, node.right);
-        match (&node.operator, left_value, right_value) {
-            (_, None, None) => None,
-            (_, Some(v), None) => Some(v),
-            (_, None, Some(v)) => Some(v),
-            (op, Some(left), Some(right)) => Some(eval_op(op, left, right)),
+        if let Some(op) = &node.operator {
+            match (left_value, right_value) {
+                (None, None) => None,
+                (Some(v), None) => Some(v),
+                (None, Some(v)) => Some(v),
+                (Some(left), Some(right)) => Some(eval_op(op, left, right)),
+            }
+        } else {
+            left_value
         }
     }
 
