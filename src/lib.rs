@@ -1,4 +1,5 @@
-/*! A simple binary expression tree, for parsing and preparing expressions which can be executed on dynamic contents.
+/*!
+A simple binary expression tree, for parsing and preparing expressions which can be executed on dynamic contents.
 
 An expression is built by calling the `push_operator`, `open_par`, `close_par` and `push_atom` functions.
 
@@ -9,11 +10,9 @@ It can then be evaluated with the `eval` function which takes as parameters
 
 Normal evaluation order is left to right but is modified with parenthesis.
 
-This library is very young. [Contact](https://miaou.dystroy.org/3768) me if you think it might be useful to you.
-
 # Example : parsing and evaluating boolean expressions
 
-Here we parse the `"(A | B) & (C | D | E)"` expression
+Here we parse the `"(A | B) & !(C | D | E)"` expression
 and evaluate it with different values of the `A` to `E` variables.
 
 Then two other expressions are evaluated to display how parenthesis and evaluation work.
@@ -21,17 +20,25 @@ Then two other expressions are evaluated to display how parenthesis and evaluati
 ```
 use bet::*;
 
-/// The operators in this example are AND and OR operating on booleans
+
+/// The operators in this example are AND, OR, and NOT operating on booleans.
+/// `And` and `Or` are binary while `Not` is unary.
+/// Note that bet doesn't prevent an operator from being usable in both
+/// unary and binary contexts.
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum BoolOperator {
     And,
     Or,
+    Not,
 }
+type BoolErr = &'static str;
 impl BoolOperator {
-    fn eval(self, a: bool, b: bool) -> bool {
-        match self {
-            Self::And => a & b,
-            Self::Or => a | b,
+    fn eval(self, a: bool, b: Option<bool>) -> Result<bool, BoolErr> {
+        match (self, b) {
+            (Self::And, Some(b)) => Ok(a & b),
+            (Self::Or, Some(b)) => Ok(a | b),
+            (Self::Not, None) => Ok(!a),
+            _ => { Err("unexpected operation") }
         }
     }
 }
@@ -42,6 +49,7 @@ fn parse(input: &str) -> BeTree<BoolOperator, char> {
         match c {
             '&' => expr.push_operator(BoolOperator::And),
             '|' => expr.push_operator(BoolOperator::Or),
+            '!' => expr.push_operator(BoolOperator::Not),
             ' ' => {},
             '(' => expr.open_par(),
             ')' => expr.close_par(),
@@ -51,37 +59,37 @@ fn parse(input: &str) -> BeTree<BoolOperator, char> {
     expr
 }
 
-let expr = parse("(A | B) & (C | D | E)");
+let expr = parse("(A | B) & !(C | D | E)");
 assert_eq!(
     expr.eval(
-        |&c| c=='A'||c=='C'||c=='E',
+        |&c| Ok(c=='A'||c=='C'||c=='E'),
         |op, a, b| op.eval(a, b),
     ),
-    Some(true),
+    Ok(Some(false)),
 );
 assert_eq!(
     expr.eval(
-        |&c| c=='A'||c=='B',
+        |&c| Ok(c=='A'||c=='B'),
         |op, a, b| op.eval(a, b),
     ),
-    Some(false),
+    Ok(Some(true)),
 );
 
 // Let's show the left to right evaluation order
 // and importance of parenthesis
 assert_eq!(
     parse("(A & B) | (C & D)").eval(
-        |&c| c=='A' || c=='B' || c=='C',
+        |&c| Ok(c=='A' || c=='B' || c=='C'),
         |op, a, b| op.eval(a, b),
     ),
-    Some(true),
+    Ok(Some(true)),
 );
 assert_eq!(
     parse("A & B | C & D").eval(
-        |&c| c=='A' || c=='B' || c=='C',
+        |&c| Ok(c=='A' || c=='B' || c=='C'),
         |op, a, b| op.eval(a, b),
     ),
-    Some(false),
+    Ok(Some(false)),
 );
 
 ```
@@ -89,6 +97,9 @@ assert_eq!(
 
 
 mod be_tree;
+
+#[cfg(test)]
+mod test_bool;
 
 pub use {
     be_tree::BeTree,
