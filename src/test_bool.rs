@@ -37,6 +37,11 @@ fn check(input: &str, expected: bool)  {
     let result = expr.eval(
         |&c| Ok(c=='T'),
         |op, a, b| op.eval(a, b),
+        |op, a| match (op, a) { // short-circuit
+            (BoolOperator::And, false) => true,
+            (BoolOperator::Or, true) => true,
+            _ => false,
+        },
     );
     assert_eq!(result, Ok(Some(expected)));
 }

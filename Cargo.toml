@@ -1,12 +1,13 @@
 [package]
 name = "bet"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["dystroy <denys.seguret@gmail.com>"]
 edition = "2018"
 keywords = ["binary", "expression", "tree", "parser"]
 license = "MIT"
 categories = ["data-structures", "parsing", "template-engine"]
 description = "Helps parsing and evaluating binary expression trees"
+repository = "https://github.com/Canop/bet"
 readme = "README.md"
 
 [dependencies]

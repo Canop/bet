@@ -19,7 +19,7 @@ An expression is built by calling the `push_operator`, `open_par`, `close_par` a
 It can then be evaluated with the `eval` function which takes as parameters
 
 * a function which gives a value to an atom
-* a function which, given an operator and two values, gives a new value
+* a function which, given an operator and one or two values, gives a new value
 
 Normal evaluation order is left to right but is modified with parenthesis.
 

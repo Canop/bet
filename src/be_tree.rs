@@ -1,8 +1,6 @@
 
 use {
-    std::{
-        fmt,
-    },
+    std::fmt,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -254,30 +252,66 @@ where
         }
     }
 
-    fn eval_child<Err, EvalAtom, EvalOp, R>(&self, eval_atom: &EvalAtom, eval_op: &EvalOp, child: Child) -> Result<Option<R>, Err>
+    pub fn try_map_atoms<Atom2, Err, F>(&self, f: F) -> Result<BeTree<Op, Atom2>, Err>
+    where
+        Atom2: fmt::Debug + Clone,
+        F: Fn(&Atom) -> Result<Atom2, Err>,
+    {
+        let mut atoms = Vec::new();
+        for atom in &self.atoms {
+            atoms.push(f(atom)?);
+        }
+        Ok(BeTree {
+            atoms,
+            nodes: self.nodes.clone(),
+            head: self.head,
+            tail: self.tail,
+            last_pushed: self.last_pushed,
+        })
+    }
+
+    fn eval_child<Err, R, EvalAtom, EvalOp, ShortCircuit>(
+        &self,
+        eval_atom: &EvalAtom,
+        eval_op: &EvalOp,
+        short_circuit: &ShortCircuit,
+        child: Child,
+    ) -> Result<Option<R>, Err>
     where
         EvalAtom: Fn(&Atom) -> Result<R, Err>,
         EvalOp: Fn(&Op, R, Option<R>) -> Result<R, Err>,
+        ShortCircuit: Fn(&Op, &R) -> bool,
     {
         Ok(match child {
             Child::None => None,
-            Child::Node(node_idx) => self.eval_node(eval_atom, eval_op, node_idx)?,
+            Child::Node(node_idx) => self.eval_node(eval_atom, eval_op, short_circuit, node_idx)?,
             Child::Atom(atom_idx) => Some(eval_atom(&self.atoms[atom_idx])?),
         })
     }
 
-    fn eval_node<Err, EvalAtom, EvalOp, R>(&self, eval_atom: &EvalAtom, eval_op: &EvalOp, node_idx: usize) -> Result<Option<R>, Err>
+    fn eval_node<Err, R, EvalAtom, EvalOp, ShortCircuit>(
+        &self,
+        eval_atom: &EvalAtom,
+        eval_op: &EvalOp,
+        short_circuit: &ShortCircuit,
+        node_idx: usize,
+    ) -> Result<Option<R>, Err>
     where
         EvalAtom: Fn(&Atom) -> Result<R, Err>,
         EvalOp: Fn(&Op, R, Option<R>) -> Result<R, Err>,
+        ShortCircuit: Fn(&Op, &R) -> bool,
     {
         let node = &self.nodes[node_idx];
-        let left_value = self.eval_child(eval_atom, eval_op, node.left)?;
-        let right_value = self.eval_child(eval_atom, eval_op, node.right)?;
+        let left_value = self.eval_child(eval_atom, eval_op, short_circuit, node.left)?;
         Ok(
             if let Some(op) = &node.operator {
                 if let Some(left_value) = left_value {
-                    Some(eval_op(op, left_value, right_value)?)
+                    if short_circuit(op, &left_value) {
+                        Some(left_value)
+                    } else {
+                        let right_value = self.eval_child(eval_atom, eval_op, short_circuit, node.right)?;
+                        Some(eval_op(op, left_value, right_value)?)
+                    }
                 } else {
                     // probably pathological
                     None
@@ -293,12 +327,18 @@ where
     /// will be used to join values until the final result is obtained.
     /// The first Error returned by one of those functions breaks the evaluation
     /// and is returned.
-    pub fn eval<Err, EvalAtom, EvalOp, R>(&self, eval_atom: EvalAtom, eval_op: EvalOp) -> Result<Option<R>, Err>
+    pub fn eval<Err, R, EvalAtom, EvalOp, ShortCircuit>(
+        &self,
+        eval_atom: EvalAtom,
+        eval_op: EvalOp,
+        short_circuit: ShortCircuit,
+    ) -> Result<Option<R>, Err>
     where
         EvalAtom: Fn(&Atom) -> Result<R, Err>,
         EvalOp: Fn(&Op, R, Option<R>) -> Result<R, Err>,
+        ShortCircuit: Fn(&Op, &R) -> bool,
     {
-        self.eval_node(&eval_atom, &eval_op, self.head)
+        self.eval_node(&eval_atom, &eval_op, &short_circuit, self.head)
     }
 }
 
