@@ -28,6 +28,8 @@ Defining features:
 * performances
 * ability to separate building, transformations, and evaluation, so that an expression can be efficiently applied on millions of inputs
 
+Limits:
+* no operator precedence (yet): evaluation is left to right when there's no parenthesis
 
 **Usage and documentation: [docs.rs/bet](https://docs.rs/bet/)**
 
