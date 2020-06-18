@@ -7,6 +7,7 @@ It can then be evaluated with the `eval` function which takes as parameters
 
 * a function which gives a value to an atom
 * a function which, given an operator and one or two values, gives a new value
+* a function deciding whether to shortcut
 
 Normal evaluation order is left to right but is modified with parenthesis.
 
@@ -19,8 +20,6 @@ use bet::BeTree;
 
 /// The operators in this example are AND, OR, and NOT operating on booleans.
 /// `And` and `Or` are binary while `Not` is unary.
-/// Note that bet doesn't prevent an operator from being usable in both
-/// unary and binary contexts.
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum BoolOperator {
     And,
@@ -47,7 +46,8 @@ fn parse(input: &str) -> BeTree<BoolOperator, char> {
     expr
 }
 
-/// evaluate the expression with the given set of chars whose value is true
+/// evaluate the expression
+/// `trues` is the set of chars whose value is true
 fn eval(expr: &BeTree<BoolOperator, char>, trues: &[char]) -> bool {
     expr.eval(
         // the function evaluating leafs - here it's simple
@@ -60,7 +60,8 @@ fn eval(expr: &BeTree<BoolOperator, char>, trues: &[char]) -> bool {
             _ => { Err("unexpected operation") }
         },
         // when to short-circuit. This is essential when leaf
-        // evaluation is expensive
+        // evaluation is expensive or when the left part guards
+        // for correctness of the right part evaluation
         |op, a| match (op, a) {
             (BoolOperator::And, false) => true,
             (BoolOperator::Or, true) => true,

@@ -103,6 +103,7 @@ where
         Self::default()
     }
 
+    /// tells whether the expression is devoid of any atom
     pub fn is_empty(&self) -> bool {
         self.atoms.is_empty()
     }
@@ -147,6 +148,7 @@ where
         self.tail = child_idx;
     }
 
+    /// add an atom in a left-to-right expression building
     pub fn push_atom(&mut self, atom: Atom) {
         self.last_pushed = TokenType::Atom;
         let atom_idx = self.store_atom(atom);
@@ -252,6 +254,9 @@ where
         }
     }
 
+    /// produce a new expression by applying a transformation on all atoms
+    ///
+    /// The operation will stop at the first error
     pub fn try_map_atoms<Atom2, Err, F>(&self, f: F) -> Result<BeTree<Op, Atom2>, Err>
     where
         Atom2: fmt::Debug + Clone,
@@ -325,6 +330,9 @@ where
     /// evaluate the expression.
     /// `eval_atom` will be called on all atoms (leafs) of the expression while `eval_op`
     /// will be used to join values until the final result is obtained.
+    /// `short_circuit` will be called on all binary operations with the operator
+    /// and the left operands as arguments. If it returns `true` then the right
+    /// operand isn't evaluated (it's guaranteed so it may serve as guard).
     /// The first Error returned by one of those functions breaks the evaluation
     /// and is returned.
     pub fn eval<Err, R, EvalAtom, EvalOp, ShortCircuit>(

@@ -1,6 +1,6 @@
 [package]
 name = "bet"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["dystroy <denys.seguret@gmail.com>"]
 edition = "2018"
 keywords = ["binary", "expression", "tree", "parser"]
