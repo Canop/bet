@@ -99,6 +99,7 @@ where
     Atom: fmt::Debug + Clone,
 {
 
+    /// create an empty expression, ready to be completed
     pub fn new() -> Self {
         Self::default()
     }
@@ -121,6 +122,17 @@ where
     /// iterate on all atoms
     pub fn iter_atoms<'a>(&'a self) -> std::slice::Iter<'a, Atom> {
         self.atoms.iter()
+    }
+
+    /// returns a reference to the last atom if it's the last
+    /// pushed token. Return none in other cases (including
+    /// when no atom has been pushed at all)
+    pub fn current_atom<'a>(&'a self) -> Option<&'a Atom> {
+        if self.last_pushed == TokenType::Atom {
+            self.atoms.last()
+        } else {
+            None
+        }
     }
 
     fn store_node(&mut self, node: Node<Op>) -> usize {
