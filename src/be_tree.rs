@@ -75,6 +75,7 @@ where
     tail: usize, // node index - where to add new nodes
     last_pushed: TokenType,
     op_count: usize, // number of operators
+    openess: usize, // opening pars minus closing pars
 }
 
 
@@ -91,6 +92,7 @@ where
             tail: 0,
             last_pushed: TokenType::Nothing,
             op_count: 0,
+            openess: 0,
         }
     }
 }
@@ -191,6 +193,7 @@ where
         self.last_pushed = TokenType::OpeningPar;
         let node_idx = self.store_node(Node::empty());
         self.add_child_node(node_idx);
+        self.openess += 1;
     }
 
     /// add a closing parenthesis to the expression
@@ -198,6 +201,7 @@ where
         self.last_pushed = TokenType::ClosingPar;
         if let Some(parent) = self.nodes[self.tail].parent {
             self.tail = parent;
+            self.openess -= 1;
         }
         // we might want to return an error if there are too
         // many closing parenthesis in the future
@@ -268,6 +272,62 @@ where
         self.op_count += 1;
     }
 
+    /// tell whether it would make sense to push a unary
+    /// operator at this point (for example it makes no
+    /// sense just after an atom)
+    pub fn accept_unary_operator(&self) -> bool {
+        use TokenType::*;
+        match self.last_pushed {
+            Nothing | Operator | OpeningPar => true,
+            _ => false,
+        }
+    }
+
+    /// tell whether it would make sense to push a binary
+    /// operator at this point (for example it makes no
+    /// sense just after another operator)
+    pub fn accept_binary_operator(&self) -> bool {
+        use TokenType::*;
+        match self.last_pushed {
+            Atom | ClosingPar => true,
+            _ => false,
+        }
+    }
+
+    /// tell whether it would make sense to push an atom
+    /// at this point (for example it makes no
+    /// sense just after a closing parenthesis)
+    pub fn accept_atom(&self) -> bool {
+        use TokenType::*;
+        match self.last_pushed {
+            Nothing | Operator | OpeningPar => true,
+            _ => false,
+        }
+    }
+
+    /// tell whether it would make sense to open a parenthesis
+    /// at this point (for example it makes no sense just after
+    /// a closing parenthesis)
+    pub fn accept_opening_par(&self) -> bool {
+        use TokenType::*;
+        match self.last_pushed {
+            Nothing | Operator | OpeningPar => true,
+            _ => false,
+        }
+    }
+
+    /// tell whether it would make sense to close a parenthesis
+    /// at this point (for example it makes no sense just after
+    /// an operator or if there are more closing parenthesis than
+    /// opening ones)
+    pub fn accept_closing_par(&self) -> bool {
+        use TokenType::*;
+        match self.last_pushed {
+            Atom | ClosingPar if self.openess == 0 => true,
+            _ => false,
+        }
+    }
+
     /// produce a new expression by applying a transformation on all atoms
     ///
     /// The operation will stop at the first error
@@ -287,6 +347,7 @@ where
             tail: self.tail,
             last_pushed: self.last_pushed,
             op_count: self.op_count,
+            openess: self.openess,
         })
     }
 
