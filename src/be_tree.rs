@@ -74,6 +74,7 @@ where
     head: usize, // node index - where to start iterating
     tail: usize, // node index - where to add new nodes
     last_pushed: TokenType,
+    op_count: usize, // number of operators
 }
 
 
@@ -89,6 +90,7 @@ where
             head: 0,
             tail: 0,
             last_pushed: TokenType::Nothing,
+            op_count: 0,
         }
     }
 }
@@ -111,7 +113,7 @@ where
 
     /// tell whether the tree is exactly one atom
     pub fn is_atomic(&self) -> bool {
-        self.atoms.len() == 1
+        self.atoms.len() == 1 && self.op_count == 0
     }
 
     /// take the atoms of the tree
@@ -210,7 +212,6 @@ where
             unary: true,
         });
         self.add_child(Child::Node(node_idx));
-        self.last_pushed = TokenType::Operator;
         self.tail = node_idx;
     }
 
@@ -247,7 +248,6 @@ where
         } else {
             self.nodes[self.tail].operator = Some(operator);
         }
-        self.last_pushed = TokenType::Operator;
     }
 
     /// add an operator right of the expression
@@ -264,6 +264,8 @@ where
                 self.push_unary_operator(operator);
             }
         }
+        self.last_pushed = TokenType::Operator;
+        self.op_count += 1;
     }
 
     /// produce a new expression by applying a transformation on all atoms
@@ -284,6 +286,7 @@ where
             head: self.head,
             tail: self.tail,
             last_pushed: self.last_pushed,
+            op_count: self.op_count,
         })
     }
 
