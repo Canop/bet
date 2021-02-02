@@ -2,6 +2,8 @@
 
 use super::*;
 
+type BoolErr = &'static str;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum BoolOperator {
     And,
@@ -9,20 +11,12 @@ enum BoolOperator {
     Not,
 }
 impl BoolOperator {
-    fn eval(self, a: bool, b: Option<bool>) -> bool {
+    fn eval(self, a: bool, b: Option<bool>) -> Result<bool, BoolErr> {
         match (self, b) {
-            (Self::And, Some(b)) => a & b,
-            (Self::Or, Some(b)) => a | b,
-            (Self::Not, None) => !a,
-            _ => unreachable!(),
-        }
-    }
-    /// tell whether we can skip evaluating the second operand
-    fn short_circuit(self, a: bool) -> bool {
-        match (self, a) {
-            (Self::And, false) => true,
-            (Self::Or, true) => true,
-            _ => false,
+            (Self::And, Some(b)) => Ok(a & b),
+            (Self::Or, Some(b)) => Ok(a | b),
+            (Self::Not, None) => Ok(!a),
+            _ => { Err("unexpected operation") }
         }
     }
 }
@@ -40,12 +34,16 @@ fn check(input: &str, expected: bool)  {
             _ => expr.push_atom(c),
         }
     }
-    let result = expr.eval(
-        |&c| c == 'T',
+    let result = expr.eval_faillible(
+        |&c| Ok(c=='T'),
         |op, a, b| op.eval(a, b),
-        |op, &a| op.short_circuit(a),
+        |op, a| match (op, a) { // short-circuit
+            (BoolOperator::And, false) => true,
+            (BoolOperator::Or, true) => true,
+            _ => false,
+        },
     );
-    assert_eq!(result, Some(expected));
+    assert_eq!(result, Ok(Some(expected)));
 }
 
 #[test]
@@ -74,4 +72,6 @@ fn test_bool() {
     check("F | !T | !(T & T | F)", false);
     check("(T & T) | (T & F)", true);
     check("T & T | T & F", false);
+
+    // TODO add unit test checking errors
 }

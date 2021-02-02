@@ -139,6 +139,13 @@ where
         }
     }
 
+    /// return the count of open parenthesis minus the
+    /// one of closing parenthesis. Illegal closing parenthesis
+    /// are ignored (hence why this count can be a usize)
+    pub fn get_openess(&self) -> usize {
+        self.openess
+    }
+
     fn store_node(&mut self, node: Node<Op>) -> usize {
         self.nodes.push(node);
         self.nodes.len() - 1
@@ -323,7 +330,7 @@ where
     pub fn accept_closing_par(&self) -> bool {
         use TokenType::*;
         match self.last_pushed {
-            Atom | ClosingPar if self.openess == 0 => true,
+            Atom | ClosingPar if self.openess > 0 => true,
             _ => false,
         }
     }
@@ -351,7 +358,26 @@ where
         })
     }
 
-    fn eval_child<Err, R, EvalAtom, EvalOp, ShortCircuit>(
+    fn eval_child<R, EvalAtom, EvalOp, ShortCircuit>(
+        &self,
+        eval_atom: &EvalAtom,
+        eval_op: &EvalOp,
+        short_circuit: &ShortCircuit,
+        child: Child,
+    ) -> Option<R>
+    where
+        EvalAtom: Fn(&Atom) -> R,
+        EvalOp: Fn(&Op, R, Option<R>) -> R,
+        ShortCircuit: Fn(&Op, &R) -> bool,
+    {
+        match child {
+            Child::None => None,
+            Child::Node(node_idx) => self.eval_node(eval_atom, eval_op, short_circuit, node_idx),
+            Child::Atom(atom_idx) => Some(eval_atom(&self.atoms[atom_idx])),
+        }
+    }
+
+    fn eval_child_faillible<Err, R, EvalAtom, EvalOp, ShortCircuit>(
         &self,
         eval_atom: &EvalAtom,
         eval_op: &EvalOp,
@@ -365,12 +391,43 @@ where
     {
         Ok(match child {
             Child::None => None,
-            Child::Node(node_idx) => self.eval_node(eval_atom, eval_op, short_circuit, node_idx)?,
+            Child::Node(node_idx) => self.eval_node_faillible(eval_atom, eval_op, short_circuit, node_idx)?,
             Child::Atom(atom_idx) => Some(eval_atom(&self.atoms[atom_idx])?),
         })
     }
 
-    fn eval_node<Err, R, EvalAtom, EvalOp, ShortCircuit>(
+    fn eval_node<R, EvalAtom, EvalOp, ShortCircuit>(
+        &self,
+        eval_atom: &EvalAtom,
+        eval_op: &EvalOp,
+        short_circuit: &ShortCircuit,
+        node_idx: usize,
+    ) -> Option<R>
+    where
+        EvalAtom: Fn(&Atom) -> R,
+        EvalOp: Fn(&Op, R, Option<R>) -> R,
+        ShortCircuit: Fn(&Op, &R) -> bool,
+    {
+        let node = &self.nodes[node_idx];
+        let left_value = self.eval_child(eval_atom, eval_op, short_circuit, node.left);
+        if let Some(op) = &node.operator {
+            if let Some(left_value) = left_value {
+                if short_circuit(op, &left_value) {
+                    Some(left_value)
+                } else {
+                    let right_value = self.eval_child(eval_atom, eval_op, short_circuit, node.right);
+                    Some(eval_op(op, left_value, right_value))
+                }
+            } else {
+                // probably pathological
+                None
+            }
+        } else {
+            left_value
+        }
+    }
+
+    fn eval_node_faillible<Err, R, EvalAtom, EvalOp, ShortCircuit>(
         &self,
         eval_atom: &EvalAtom,
         eval_op: &EvalOp,
@@ -383,14 +440,19 @@ where
         ShortCircuit: Fn(&Op, &R) -> bool,
     {
         let node = &self.nodes[node_idx];
-        let left_value = self.eval_child(eval_atom, eval_op, short_circuit, node.left)?;
+        let left_value = self.eval_child_faillible(eval_atom, eval_op, short_circuit, node.left)?;
         Ok(
             if let Some(op) = &node.operator {
                 if let Some(left_value) = left_value {
                     if short_circuit(op, &left_value) {
                         Some(left_value)
                     } else {
-                        let right_value = self.eval_child(eval_atom, eval_op, short_circuit, node.right)?;
+                        let right_value = self.eval_child_faillible(
+                            eval_atom,
+                            eval_op,
+                            short_circuit,
+                            node.right,
+                        )?;
                         Some(eval_op(op, left_value, right_value)?)
                     }
                 } else {
@@ -404,14 +466,45 @@ where
     }
 
     /// evaluate the expression.
+    ///
     /// `eval_atom` will be called on all atoms (leafs) of the expression while `eval_op`
     /// will be used to join values until the final result is obtained.
+    ///
     /// `short_circuit` will be called on all binary operations with the operator
     /// and the left operands as arguments. If it returns `true` then the right
     /// operand isn't evaluated (it's guaranteed so it may serve as guard).
+    ///
+    /// This function should be used when neither atom evaluation nor operator
+    /// execution can raise errors (this usually means consistency checks have
+    /// been done during parsing).
+    pub fn eval<R, EvalAtom, EvalOp, ShortCircuit>(
+        &self,
+        eval_atom: EvalAtom,
+        eval_op: EvalOp,
+        short_circuit: ShortCircuit,
+    ) -> Option<R>
+    where
+        EvalAtom: Fn(&Atom) -> R,
+        EvalOp: Fn(&Op, R, Option<R>) -> R,
+        ShortCircuit: Fn(&Op, &R) -> bool,
+    {
+        self.eval_node(&eval_atom, &eval_op, &short_circuit, self.head)
+    }
+
+    /// evaluate the expression.
+    ///
+    /// `eval_atom` will be called on all atoms (leafs) of the expression while `eval_op`
+    /// will be used to join values until the final result is obtained.
+    ///
+    /// `short_circuit` will be called on all binary operations with the operator
+    /// and the left operands as arguments. If it returns `true` then the right
+    /// operand isn't evaluated (it's guaranteed so it may serve as guard).
+    ///
+    /// This function should be used when errors are expected during either atom
+    /// evaluation or operator execution (for example because parsing was lax).
     /// The first Error returned by one of those functions breaks the evaluation
     /// and is returned.
-    pub fn eval<Err, R, EvalAtom, EvalOp, ShortCircuit>(
+    pub fn eval_faillible<Err, R, EvalAtom, EvalOp, ShortCircuit>(
         &self,
         eval_atom: EvalAtom,
         eval_op: EvalOp,
@@ -422,7 +515,7 @@ where
         EvalOp: Fn(&Op, R, Option<R>) -> Result<R, Err>,
         ShortCircuit: Fn(&Op, &R) -> bool,
     {
-        self.eval_node(&eval_atom, &eval_op, &short_circuit, self.head)
+        self.eval_node_faillible(&eval_atom, &eval_op, &short_circuit, self.head)
     }
 }
 

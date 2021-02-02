@@ -28,8 +28,13 @@ enum BoolOperator {
 }
 
 /// simple but realistic example of an expression parsing.
+///
 /// You don't have to parse tokens in advance, you may accumulate
 /// into atoms with `mutate_or_create_atom`.
+///
+/// For more reliable results on user inputs, you may want to check
+/// the consistency (or use default operators) during parsing
+/// with `accept_atom`, `accept_unary_operator`, etc.
 fn parse(input: &str) -> BeTree<BoolOperator, char> {
     let mut expr = BeTree::new();
     for c in input.chars() {
@@ -46,10 +51,15 @@ fn parse(input: &str) -> BeTree<BoolOperator, char> {
     expr
 }
 
-/// evaluate the expression
-/// `trues` is the set of chars whose value is true
+/// evaluate the expression.
+///
+/// `trues` is the set of chars whose value is true.
+///
+/// If no operation is expected to fail, you may use
+/// `eval` instead of `eval_faillible`, for a simpler
+/// API.
 fn eval(expr: &BeTree<BoolOperator, char>, trues: &[char]) -> bool {
-    expr.eval(
+    expr.eval_faillible(
         // the function evaluating leafs - here it's simple
         |c| Ok(trues.contains(c)),
         // the function applying an operator to one or two values
@@ -92,6 +102,8 @@ mod be_tree;
 
 #[cfg(test)]
 mod test_bool;
+#[cfg(test)]
+mod test_bool_faillible;
 
 pub use {
     be_tree::BeTree,

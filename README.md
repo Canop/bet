@@ -24,9 +24,11 @@ It can then be evaluated with the `eval` function which takes as parameters
 
 Normal evaluation order is left to right but is modified with parenthesis.
 
-**bet** is designed around separation of building, transformations, and evaluation, so that an expression can be efficiently applied on many inputs.
+**bet** is designed around separation of building, transformations, and evaluation, so that an expression can be efficiently applied on many inputs. **bet** is designed for very fast evaluation.
 
 **bet** is used in [broot](https://dystroy.org/broot) to let users type composite queries on files.
+
+**bet** is used in [rhit](https://github.com/Canop/rhit) to filter log lines.
 
 Limits:
 * no operator precedence: evaluation is left to right when there's no parenthesis
