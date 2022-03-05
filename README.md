@@ -28,10 +28,9 @@ Normal evaluation order is left to right but is modified with parenthesis.
 
 **bet** is used in [broot](https://dystroy.org/broot) to let users type composite queries on files.
 
-**bet** is used in [rhit](https://github.com/Canop/rhit) to filter log lines.
+**bet** is used in [rhit](https://dystroy.org/rhit) to filter log lines.
 
-Limits:
-* no operator precedence: evaluation is left to right when there's no parenthesis
+**bet** is used in [lfs](https://dystroy.org/lfs) to filter filesystems.
 
 **Usage and documentation: [docs.rs/bet](https://docs.rs/bet/)**
 

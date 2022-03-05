@@ -1,22 +1,9 @@
-
 use {
+    crate::*,
     std::fmt,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Child {
-    None,
-    Node(usize),
-    Atom(usize),
-}
-impl Child {
-    pub fn is_some(self) -> bool {
-        match self {
-            Self::None => false,
-            _ => true,
-        }
-    }
-}
+pub type AtomId = usize;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum TokenType {
@@ -25,41 +12,6 @@ enum TokenType {
     Operator,
     OpeningPar,
     ClosingPar,
-}
-
-#[derive(Debug, Clone)]
-struct Node<Op>
-where
-    Op: fmt::Debug + Clone + PartialEq,
-{
-    operator: Option<Op>,
-    parent: Option<usize>,
-    left: Child,
-    right: Child,
-    unary: bool, // true when there's an operator in a unary position
-}
-
-impl<Op> Node<Op>
-where
-    Op: fmt::Debug + Clone + PartialEq,
-{
-    /// a node is full when we can't add other childs
-    fn is_full(&self) -> bool {
-        if self.unary {
-            self.left.is_some()
-        } else {
-            self.right.is_some()
-        }
-    }
-    fn empty() -> Self {
-        Self {
-            operator: None,
-            parent: None,
-            left: Child::None,
-            right: Child::None,
-            unary: false,
-        }
-    }
 }
 
 /// An expression which may contain unary and binary operations
@@ -71,8 +23,8 @@ where
 {
     atoms: Vec<Atom>,
     nodes: Vec<Node<Op>>,
-    head: usize, // node index - where to start iterating
-    tail: usize, // node index - where to add new nodes
+    head: NodeId, // node index - where to start iterating
+    tail: NodeId, // node index - where to add new nodes
     last_pushed: TokenType,
     op_count: usize, // number of operators
     openess: usize, // opening pars minus closing pars
@@ -107,6 +59,28 @@ where
     pub fn new() -> Self {
         Self::default()
     }
+
+    pub fn node(&self, node_id: NodeId) -> Option<&Node<Op>> {
+        self.nodes.get(node_id)
+    }
+
+    pub fn atom(&self, atom_id: AtomId) -> Option<&Atom> {
+        self.atoms.get(atom_id)
+    }
+
+    pub fn head(&self) -> &Node<Op> {
+        &self.nodes[self.head]
+    }
+
+    //#[inline(always)]
+    //fn node_unchecked(&self, node_id: NodeId) -> &Node<Op> {
+    //    self.nodes[node_id.0]
+    //}
+
+    //#[inline(always)]
+    //fn node_unchecked_mut(&mut self, node_id: NodeId) -> &mut Node<Op> {
+    //    self.nodes[node_id.0]
+    //}
 
     /// tells whether the expression is devoid of any atom
     pub fn is_empty(&self) -> bool {
@@ -338,6 +312,7 @@ where
     /// produce a new expression by applying a transformation on all atoms
     ///
     /// The operation will stop at the first error
+    #[inline]
     pub fn try_map_atoms<Atom2, Err, F>(&self, f: F) -> Result<BeTree<Op, Atom2>, Err>
     where
         Atom2: fmt::Debug + Clone,
@@ -477,6 +452,7 @@ where
     /// This function should be used when neither atom evaluation nor operator
     /// execution can raise errors (this usually means consistency checks have
     /// been done during parsing).
+    #[inline]
     pub fn eval<R, EvalAtom, EvalOp, ShortCircuit>(
         &self,
         eval_atom: EvalAtom,
@@ -504,6 +480,7 @@ where
     /// evaluation or operator execution (for example because parsing was lax).
     /// The first Error returned by one of those functions breaks the evaluation
     /// and is returned.
+    #[inline]
     pub fn eval_faillible<Err, R, EvalAtom, EvalOp, ShortCircuit>(
         &self,
         eval_atom: EvalAtom,
@@ -517,5 +494,41 @@ where
     {
         self.eval_node_faillible(&eval_atom, &eval_op, &short_circuit, self.head)
     }
+
+    pub fn simplify(&mut self) {
+        while let Node {
+            operator: None,
+            left: Child::Node(node_id),
+            parent: None,
+            right: Child::None,
+            unary: false,
+        } = self.nodes[self.head] {
+            self.nodes[node_id].parent = None;
+            self.head = node_id;
+        }
+    }
+
+    pub fn print_child(&self, child: Child, indent: usize) {
+        for _ in 0..indent {
+            print!(" ");
+        }
+        match child {
+            Child::None => println!("-"),
+            Child::Node(node_id) => self.print_node(node_id, indent + 1),
+            Child::Atom(atom_id) => println!("{:?}", &self.atoms[atom_id]),
+        }
+    }
+
+    pub fn print_node(&self, node_id: NodeId, indent: usize) {
+        let node = &self.nodes[node_id];
+        println!("[{}] {:?}", node_id, &node.operator);
+        self.print_child(node.left, indent+1);
+        self.print_child(node.right, indent+1);
+    }
+
+    pub fn print_tree(&self) {
+        self.print_node(self.head, 0);
+    }
 }
+
 

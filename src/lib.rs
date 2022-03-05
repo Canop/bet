@@ -98,6 +98,8 @@ assert_eq!(eval(&parse(" A & B | C & D "), &['A', 'B', 'C']), false);
 */
 
 
+mod child;
+mod node;
 mod be_tree;
 
 #[cfg(test)]
@@ -106,6 +108,8 @@ mod test_bool;
 mod test_bool_faillible;
 
 pub use {
-    be_tree::BeTree,
+    child::*,
+    node::*,
+    be_tree::*,
 };
 
