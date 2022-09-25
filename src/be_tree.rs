@@ -49,6 +49,23 @@ where
     }
 }
 
+impl<Op, Atom> PartialEq for BeTree<Op, Atom>
+where
+    Op: fmt::Debug + Clone + PartialEq,
+    Atom: fmt::Debug + Clone + PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.atoms == other.atoms
+            && self.nodes == other.nodes
+            && self.head == other.head
+            && self.head == other.head
+            && self.tail == other.tail
+            && self.last_pushed == other.last_pushed
+            && self.op_count == other.op_count
+            && self.openess == other.openess
+    }
+}
+
 impl<Op, Atom> BeTree<Op, Atom>
 where
     Op: fmt::Debug + Clone + PartialEq,

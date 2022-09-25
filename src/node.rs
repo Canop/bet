@@ -9,7 +9,7 @@ pub type NodeId = usize;
 ///
 /// You probably don't need to use this struct
 /// unless you want to inspect the tree
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Node<Op>
 where
     Op: fmt::Debug + Clone + PartialEq,

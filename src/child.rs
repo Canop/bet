@@ -1,6 +1,6 @@
 use crate::*;
 
-/// One of the childs of a node
+/// One of the children of a node
 ///
 /// You probably don't need to use this struct unless
 /// you want to inspect the binary expression tree.
