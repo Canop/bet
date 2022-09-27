@@ -14,6 +14,18 @@ enum TokenType {
     ClosingPar,
 }
 
+/// Something that can be added to the tree
+pub enum Token<Op, Atom>
+where
+    Op: fmt::Debug + Clone + PartialEq,
+    Atom: fmt::Debug + Clone,
+{
+    Atom(Atom),
+    Operator(Op),
+    OpeningParenthesis,
+    ClosingParenthesis,
+}
+
 /// An expression which may contain unary and binary operations
 #[derive(Debug, Clone)]
 pub struct BeTree<Op, Atom>
@@ -162,6 +174,16 @@ where
         self.tail = child_idx;
     }
 
+    /// add one of the possible token: parenthesis, operator or atom
+    pub fn push(&mut self, token: Token<Op, Atom>) {
+        match token {
+            Token::Atom(atom) => self.push_atom(atom),
+            Token::Operator(op) => self.push_operator(op),
+            Token::OpeningParenthesis => self.open_par(),
+            Token::ClosingParenthesis => self.close_par(),
+        }
+    }
+
     /// add an atom in a left-to-right expression building
     pub fn push_atom(&mut self, atom: Atom) {
         self.last_pushed = TokenType::Atom;
@@ -185,6 +207,7 @@ where
         }
         self.atoms.last_mut().unwrap()
     }
+
 
     /// add an opening parenthesis to the expression
     pub fn open_par(&mut self) {
