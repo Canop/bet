@@ -235,38 +235,38 @@ where
     }
 
     fn push_binary_operator(&mut self, operator: Op) {
-        if self.nodes[self.tail].is_full() {
-            // we replace the current tail
-            // which becomes the left child of the new node
-            let new_idx = self.store_node(Node {
-                operator: Some(operator),
-                parent: self.nodes[self.tail].parent,
-                left: Child::Node(self.tail),
-                right: Child::None,
-                unary: false,
-            });
-            // we connect the parent to the new node
-            if let Some(parent_idx) = self.nodes[new_idx].parent {
-                if self.nodes[parent_idx].left == Child::Node(self.tail) {
-                    // the connection was to the left child
-                    self.nodes[parent_idx].left = Child::Node(new_idx);
-                } else {
-                    // it must have been to the right child
-                    debug_assert_eq!(self.nodes[parent_idx].right, Child::Node(self.tail));
-                    self.nodes[parent_idx].right = Child::Node(new_idx);
-                }
-            } else {
-                // the replaced node was the head
-                self.head = new_idx;
-            }
-            // we connect the tail to the new node
-            //if let Child::Node(child_idx) = self.nodes[self.tail]I
-            self.nodes[self.tail].parent = Some(new_idx);
-            // and we update the tail
-            self.tail = new_idx;
-        } else {
+        if !self.nodes[self.tail].is_full() {
             self.nodes[self.tail].operator = Some(operator);
+            return;
         }
+        // we replace the current tail
+        // which becomes the left child of the new node
+        let new_idx = self.store_node(Node {
+            operator: Some(operator),
+            parent: self.nodes[self.tail].parent,
+            left: Child::Node(self.tail),
+            right: Child::None,
+            unary: false,
+        });
+        // we connect the parent to the new node
+        let Some(parent_idx) = self.nodes[new_idx].parent else {
+            // the replaced node was the head
+            self.head = new_idx;
+            return;
+        };
+        if self.nodes[parent_idx].left == Child::Node(self.tail) {
+            // the connection was to the left child
+            self.nodes[parent_idx].left = Child::Node(new_idx);
+        } else {
+            // it must have been to the right child
+            debug_assert_eq!(self.nodes[parent_idx].right, Child::Node(self.tail));
+            self.nodes[parent_idx].right = Child::Node(new_idx);
+        }
+        // we connect the tail to the new node
+        //if let Child::Node(child_idx) = self.nodes[self.tail]I
+        self.nodes[self.tail].parent = Some(new_idx);
+        // and we update the tail
+        self.tail = new_idx;
     }
 
     /// add an operator right of the expression
@@ -406,22 +406,18 @@ where
     {
         let node = &self.nodes[node_idx];
         let left_value = self.eval_child(eval_atom, eval_op, short_circuit, node.left);
-        if let Some(op) = &node.operator {
-            if let Some(left_value) = left_value {
-                if short_circuit(op, &left_value) {
-                    Some(left_value)
-                } else {
-                    let right_value =
-                        self.eval_child(eval_atom, eval_op, short_circuit, node.right);
-                    Some(eval_op(op, left_value, right_value))
-                }
-            } else {
-                // probably pathological
-                None
-            }
-        } else {
-            left_value
+        let Some(op) = &node.operator else {
+            return left_value;
+        };
+        let Some(left_value) = left_value else {
+            // probably pathological
+            return None;
+        };
+        if short_circuit(op, &left_value) {
+            return Some(left_value);
         }
+        let right_value = self.eval_child(eval_atom, eval_op, short_circuit, node.right);
+        Some(eval_op(op, left_value, right_value))
     }
 
     fn eval_node_faillible<Err, R, EvalAtom, EvalOp, ShortCircuit>(
@@ -438,22 +434,19 @@ where
     {
         let node = &self.nodes[node_idx];
         let left_value = self.eval_child_faillible(eval_atom, eval_op, short_circuit, node.left)?;
-        Ok(if let Some(op) = &node.operator {
-            if let Some(left_value) = left_value {
-                if short_circuit(op, &left_value) {
-                    Some(left_value)
-                } else {
-                    let right_value =
-                        self.eval_child_faillible(eval_atom, eval_op, short_circuit, node.right)?;
-                    Some(eval_op(op, left_value, right_value)?)
-                }
-            } else {
-                // probably pathological
-                None
-            }
-        } else {
-            left_value
-        })
+        let Some(op) = &node.operator else {
+            return Ok(left_value);
+        };
+        let Some(left_value) = left_value else {
+            // probably pathological
+            return Ok(None);
+        };
+        if short_circuit(op, &left_value) {
+            return Ok(Some(left_value));
+        };
+        let right_value =
+            self.eval_child_faillible(eval_atom, eval_op, short_circuit, node.right)?;
+        Ok(Some(eval_op(op, left_value, right_value)?))
     }
 
     /// evaluate the expression.
