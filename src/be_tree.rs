@@ -156,10 +156,10 @@ where
 
     fn add_child(&mut self, child: Child) {
         debug_assert!(!self.nodes[self.tail].is_full());
-        if !self.nodes[self.tail].left.is_some() {
-            self.nodes[self.tail].left = child;
-        } else {
+        if self.nodes[self.tail].left.is_some() {
             self.nodes[self.tail].right = child;
+        } else {
+            self.nodes[self.tail].left = child;
         }
     }
 
@@ -183,10 +183,10 @@ where
     pub fn push_atom(&mut self, atom: Atom) {
         self.last_pushed = TokenType::Atom;
         let atom_idx = self.store_atom(atom);
-        if !self.nodes[self.tail].left.is_some() {
-            self.nodes[self.tail].left = Child::Atom(atom_idx);
-        } else {
+        if self.nodes[self.tail].left.is_some() {
             self.nodes[self.tail].right = Child::Atom(atom_idx);
+        } else {
+            self.nodes[self.tail].left = Child::Atom(atom_idx);
         }
     }
 
