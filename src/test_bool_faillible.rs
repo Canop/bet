@@ -19,6 +19,10 @@ impl BoolOperator {
             _ => Err("unexpected operation"),
         }
     }
+    /// tell whether we can skip evaluating the second operand
+    fn short_circuit(self, a: bool) -> bool {
+        matches!((self, a), (Self::And, false) | (Self::Or, true))
+    }
 }
 
 fn check(input: &str, expected: bool) {
@@ -37,11 +41,7 @@ fn check(input: &str, expected: bool) {
     let result = expr.eval_faillible(
         |&c| Ok(c == 'T'),
         |op, a, b| op.eval(a, b),
-        |op, a| match (op, a) { // short-circuit
-            (BoolOperator::And, false) => true,
-            (BoolOperator::Or, true) => true,
-            _ => false,
-        },
+        |op, a| op.short_circuit(*a),
     );
     assert_eq!(result, Ok(Some(expected)));
 }
