@@ -36,7 +36,7 @@ where
     tail: NodeId, // node index - where to add new nodes
     last_pushed: TokenType,
     op_count: usize, // number of operators
-    openess: usize,  // opening pars minus closing pars
+    openness: usize, // opening pars minus closing pars
 }
 
 impl<Op, Atom> Default for BeTree<Op, Atom>
@@ -52,7 +52,7 @@ where
             tail: 0,
             last_pushed: TokenType::Nothing,
             op_count: 0,
-            openess: 0,
+            openness: 0,
         }
     }
 }
@@ -70,7 +70,7 @@ where
             && self.tail == other.tail
             && self.last_pushed == other.last_pushed
             && self.op_count == other.op_count
-            && self.openess == other.openess
+            && self.openness == other.openness
     }
 }
 
@@ -140,8 +140,8 @@ where
     /// return the count of open parenthesis minus the
     /// one of closing parenthesis. Illegal closing parenthesis
     /// are ignored (hence why this count can be a usize)
-    pub fn get_openess(&self) -> usize {
-        self.openess
+    pub fn get_openness(&self) -> usize {
+        self.openness
     }
 
     fn store_node(&mut self, node: Node<Op>) -> usize {
@@ -208,7 +208,7 @@ where
         self.last_pushed = TokenType::OpeningPar;
         let node_idx = self.store_node(Node::empty());
         self.add_child_node(node_idx);
-        self.openess += 1;
+        self.openness += 1;
     }
 
     /// add a closing parenthesis to the expression
@@ -216,7 +216,7 @@ where
         self.last_pushed = TokenType::ClosingPar;
         if let Some(parent) = self.nodes[self.tail].parent {
             self.tail = parent;
-            self.openess -= 1;
+            self.openness -= 1;
         }
         // we might want to return an error if there are too
         // many closing parenthesis in the future
@@ -325,7 +325,7 @@ where
     /// opening ones)
     pub fn accept_closing_par(&self) -> bool {
         use TokenType::*;
-        matches!(self.last_pushed, Atom | ClosingPar if self.openess > 0)
+        matches!(self.last_pushed, Atom | ClosingPar if self.openness > 0)
     }
 
     /// produce a new expression by applying a transformation on all atoms
@@ -348,7 +348,7 @@ where
             tail: self.tail,
             last_pushed: self.last_pushed,
             op_count: self.op_count,
-            openess: self.openess,
+            openness: self.openness,
         })
     }
 
