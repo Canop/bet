@@ -27,14 +27,14 @@ impl BoolOperator {
     }
 }
 
-fn check(input: &str, expected: bool)  {
+fn check(input: &str, expected: bool) {
     let mut expr = BeTree::new();
     for c in input.chars() {
         match c {
             '&' => expr.push_operator(BoolOperator::And),
             '|' => expr.push_operator(BoolOperator::Or),
             '!' => expr.push_operator(BoolOperator::Not),
-            ' ' => {},
+            ' ' => {}
             '(' => expr.open_par(),
             ')' => expr.close_par(),
             _ => expr.push_atom(c),

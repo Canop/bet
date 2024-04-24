@@ -1,7 +1,4 @@
-use {
-    crate::Child,
-    std::fmt,
-};
+use {crate::Child, std::fmt};
 
 pub type NodeId = usize;
 
@@ -43,4 +40,3 @@ where
         }
     }
 }
-

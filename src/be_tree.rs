@@ -1,7 +1,4 @@
-use {
-    crate::*,
-    std::fmt,
-};
+use {crate::*, std::fmt};
 
 pub type AtomId = usize;
 
@@ -39,9 +36,8 @@ where
     tail: NodeId, // node index - where to add new nodes
     last_pushed: TokenType,
     op_count: usize, // number of operators
-    openess: usize, // opening pars minus closing pars
+    openess: usize,  // opening pars minus closing pars
 }
-
 
 impl<Op, Atom> Default for BeTree<Op, Atom>
 where
@@ -83,7 +79,6 @@ where
     Op: fmt::Debug + Clone + PartialEq,
     Atom: fmt::Debug + Clone,
 {
-
     /// create an empty expression, ready to be completed
     pub fn new() -> Self {
         Self::default()
@@ -154,7 +149,7 @@ where
         self.nodes.len() - 1
     }
 
-    fn store_atom(&mut self,  atom: Atom) -> usize {
+    fn store_atom(&mut self, atom: Atom) -> usize {
         self.atoms.push(atom);
         self.atoms.len() - 1
     }
@@ -207,7 +202,6 @@ where
         }
         self.atoms.last_mut().unwrap()
     }
-
 
     /// add an opening parenthesis to the expression
     pub fn open_par(&mut self) {
@@ -406,7 +400,9 @@ where
     {
         Ok(match child {
             Child::None => None,
-            Child::Node(node_idx) => self.eval_node_faillible(eval_atom, eval_op, short_circuit, node_idx)?,
+            Child::Node(node_idx) => {
+                self.eval_node_faillible(eval_atom, eval_op, short_circuit, node_idx)?
+            }
             Child::Atom(atom_idx) => Some(eval_atom(&self.atoms[atom_idx])?),
         })
     }
@@ -430,7 +426,8 @@ where
                 if short_circuit(op, &left_value) {
                     Some(left_value)
                 } else {
-                    let right_value = self.eval_child(eval_atom, eval_op, short_circuit, node.right);
+                    let right_value =
+                        self.eval_child(eval_atom, eval_op, short_circuit, node.right);
                     Some(eval_op(op, left_value, right_value))
                 }
             } else {
@@ -456,18 +453,13 @@ where
     {
         let node = &self.nodes[node_idx];
         let left_value = self.eval_child_faillible(eval_atom, eval_op, short_circuit, node.left)?;
-        Ok(
-            if let Some(op) = &node.operator {
+        Ok(if let Some(op) = &node.operator {
                 if let Some(left_value) = left_value {
                     if short_circuit(op, &left_value) {
                         Some(left_value)
                     } else {
-                        let right_value = self.eval_child_faillible(
-                            eval_atom,
-                            eval_op,
-                            short_circuit,
-                            node.right,
-                        )?;
+                    let right_value =
+                        self.eval_child_faillible(eval_atom, eval_op, short_circuit, node.right)?;
                         Some(eval_op(op, left_value, right_value)?)
                     }
                 } else {
@@ -476,8 +468,7 @@ where
                 }
             } else {
                 left_value
-            }
-        )
+        })
     }
 
     /// evaluate the expression.
@@ -542,7 +533,8 @@ where
             parent: None,
             right: Child::None,
             unary: false,
-        } = self.nodes[self.head] {
+        } = self.nodes[self.head]
+        {
             self.nodes[node_id].parent = None;
             self.head = node_id;
         }
@@ -562,13 +554,11 @@ where
     pub fn print_node(&self, node_id: NodeId, indent: usize) {
         let node = &self.nodes[node_id];
         println!("[{}] {:?}", node_id, &node.operator);
-        self.print_child(node.left, indent+1);
-        self.print_child(node.right, indent+1);
+        self.print_child(node.left, indent + 1);
+        self.print_child(node.right, indent + 1);
     }
 
     pub fn print_tree(&self) {
         self.print_node(self.head, 0);
     }
 }
-
-

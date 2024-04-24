@@ -16,26 +16,26 @@ impl BoolOperator {
             (Self::And, Some(b)) => Ok(a & b),
             (Self::Or, Some(b)) => Ok(a | b),
             (Self::Not, None) => Ok(!a),
-            _ => { Err("unexpected operation") }
+            _ => Err("unexpected operation"),
         }
     }
 }
 
-fn check(input: &str, expected: bool)  {
+fn check(input: &str, expected: bool) {
     let mut expr = BeTree::new();
     for c in input.chars() {
         match c {
             '&' => expr.push_operator(BoolOperator::And),
             '|' => expr.push_operator(BoolOperator::Or),
             '!' => expr.push_operator(BoolOperator::Not),
-            ' ' => {},
+            ' ' => {}
             '(' => expr.open_par(),
             ')' => expr.close_par(),
             _ => expr.push_atom(c),
         }
     }
     let result = expr.eval_faillible(
-        |&c| Ok(c=='T'),
+        |&c| Ok(c == 'T'),
         |op, a, b| op.eval(a, b),
         |op, a| match (op, a) { // short-circuit
             (BoolOperator::And, false) => true,
