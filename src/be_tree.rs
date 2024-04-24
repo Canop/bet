@@ -122,14 +122,14 @@ where
     }
 
     /// iterate on all atoms
-    pub fn iter_atoms<'a>(&'a self) -> std::slice::Iter<'a, Atom> {
+    pub fn iter_atoms(&self) -> std::slice::Iter<'_, Atom> {
         self.atoms.iter()
     }
 
     /// returns a reference to the last atom if it's the last
     /// pushed token. Return none in other cases (including
     /// when no atom has been pushed at all)
-    pub fn current_atom<'a>(&'a self) -> Option<&'a Atom> {
+    pub fn current_atom(&self) -> Option<&Atom> {
         if self.last_pushed == TokenType::Atom {
             self.atoms.last()
         } else {
