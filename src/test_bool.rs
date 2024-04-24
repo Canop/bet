@@ -19,11 +19,7 @@ impl BoolOperator {
     }
     /// tell whether we can skip evaluating the second operand
     fn short_circuit(self, a: bool) -> bool {
-        match (self, a) {
-            (Self::And, false) => true,
-            (Self::Or, true) => true,
-            _ => false,
-        }
+        matches!((self, a), (Self::And, false) | (Self::Or, true))
     }
 }
 

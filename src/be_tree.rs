@@ -292,10 +292,7 @@ where
     /// sense just after an atom)
     pub fn accept_unary_operator(&self) -> bool {
         use TokenType::*;
-        match self.last_pushed {
-            Nothing | Operator | OpeningPar => true,
-            _ => false,
-        }
+        matches!(self.last_pushed, Nothing | Operator | OpeningPar)
     }
 
     /// tell whether it would make sense to push a binary
@@ -303,10 +300,7 @@ where
     /// sense just after another operator)
     pub fn accept_binary_operator(&self) -> bool {
         use TokenType::*;
-        match self.last_pushed {
-            Atom | ClosingPar => true,
-            _ => false,
-        }
+        matches!(self.last_pushed, Atom | ClosingPar)
     }
 
     /// tell whether it would make sense to push an atom
@@ -314,10 +308,7 @@ where
     /// sense just after a closing parenthesis)
     pub fn accept_atom(&self) -> bool {
         use TokenType::*;
-        match self.last_pushed {
-            Nothing | Operator | OpeningPar => true,
-            _ => false,
-        }
+        matches!(self.last_pushed, Nothing | Operator | OpeningPar)
     }
 
     /// tell whether it would make sense to open a parenthesis
@@ -325,10 +316,7 @@ where
     /// a closing parenthesis)
     pub fn accept_opening_par(&self) -> bool {
         use TokenType::*;
-        match self.last_pushed {
-            Nothing | Operator | OpeningPar => true,
-            _ => false,
-        }
+        matches!(self.last_pushed, Nothing | Operator | OpeningPar)
     }
 
     /// tell whether it would make sense to close a parenthesis
@@ -337,10 +325,7 @@ where
     /// opening ones)
     pub fn accept_closing_par(&self) -> bool {
         use TokenType::*;
-        match self.last_pushed {
-            Atom | ClosingPar if self.openess > 0 => true,
-            _ => false,
-        }
+        matches!(self.last_pushed, Atom | ClosingPar if self.openess > 0)
     }
 
     /// produce a new expression by applying a transformation on all atoms
@@ -454,20 +439,20 @@ where
         let node = &self.nodes[node_idx];
         let left_value = self.eval_child_faillible(eval_atom, eval_op, short_circuit, node.left)?;
         Ok(if let Some(op) = &node.operator {
-                if let Some(left_value) = left_value {
-                    if short_circuit(op, &left_value) {
-                        Some(left_value)
-                    } else {
+            if let Some(left_value) = left_value {
+                if short_circuit(op, &left_value) {
+                    Some(left_value)
+                } else {
                     let right_value =
                         self.eval_child_faillible(eval_atom, eval_op, short_circuit, node.right)?;
-                        Some(eval_op(op, left_value, right_value)?)
-                    }
-                } else {
-                    // probably pathological
-                    None
+                    Some(eval_op(op, left_value, right_value)?)
                 }
             } else {
-                left_value
+                // probably pathological
+                None
+            }
+        } else {
+            left_value
         })
     }
 

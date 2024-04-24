@@ -12,9 +12,6 @@ pub enum Child {
 }
 impl Child {
     pub fn is_some(self) -> bool {
-        match self {
-            Self::None => false,
-            _ => true,
-        }
+        !matches!(self, Self::None)
     }
 }
