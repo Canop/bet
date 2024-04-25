@@ -12,11 +12,7 @@ enum TokenType {
 }
 
 /// Something that can be added to the tree
-pub enum Token<Op, Atom>
-where
-    Op: fmt::Debug + Clone + PartialEq,
-    Atom: fmt::Debug + Clone,
-{
+pub enum Token<Op, Atom> {
     Atom(Atom),
     Operator(Op),
     OpeningParenthesis,
