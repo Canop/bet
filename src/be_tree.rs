@@ -66,7 +66,6 @@ where
         self.atoms == other.atoms
             && self.nodes == other.nodes
             && self.head == other.head
-            && self.head == other.head
             && self.tail == other.tail
             && self.last_pushed == other.last_pushed
             && self.op_count == other.op_count
