@@ -27,12 +27,15 @@ Normal evaluation order is left to right but is modified with parenthesis.
 
 **bet** is designed around separation of building, transformations, and evaluation, so that an expression can be efficiently applied on many inputs. **bet** is designed for very fast evaluation.
 
-**bet** is used in [broot](https://dystroy.org/broot) to let users type composite queries on files.
-
-**bet** is used in [rhit](https://dystroy.org/rhit) to filter log lines.
+## Known open-source usages
 
 **bet** is used in [dysk](https://dystroy.org/dysk) to filter filesystems.
+Example: `dysk -f '(type=xfs & remote=no) | size > 5T'` (here, the atoms are `type=xfs`, `remote=no`, and `size > 5T`).
 
-**Usage and documentation: [docs.rs/bet](https://docs.rs/bet/)**
+In [broot](https://dystroy.org/broot), **bet** enables composite queries on files.
+For example, `!lock&(carg|c/carg/)` looks for files whose name or content contains "carg", but excluding files whose name contains "lock".
 
-If you wonder whether bet could be applied to your problems, don't hesitate to [come and discuss](https://miaou.dystroy.org/3768). If you know a documented crate with overlapping use cases, tell me too so that I may list it here as alternative.
+**bet** is used in [rhit](https://dystroy.org/rhit) to filter log lines.
+For example, with `rhit -p 'y & !( \d{4} | sp | bl )'`, you get stats on hits on paths containing "y" but neither a 4 digits number, "sp", nor "bl".
+
+If you wonder whether bet could be applied to your problems, don't hesitate to [come and discuss](https://miaou.dystroy.org/3768).

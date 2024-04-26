@@ -12,6 +12,19 @@ It can then be evaluated with the `eval` function which takes as parameters
 
 Normal evaluation order is left to right but is modified with parenthesis.
 
+**bet** is designed around separation of building, transformations, and evaluation, so that an expression can be efficiently applied on many inputs. **bet** is designed for very fast evaluation.
+
+# Examples: Known open-source usages
+
+**bet** is used in [dysk](https://dystroy.org/dysk) to filter filesystems.
+Example: `dysk -f '(type=xfs & remote=no) | size > 5T'` (here, the atoms are `type=xfs`, `remote=no`, and `size > 5T`).
+
+In [broot](https://dystroy.org/broot), **bet** enables composite queries on files.
+For example, `!lock&(carg|c/carg/)` looks for files whose name or content contains "carg", but excluding files whose name contains "lock".
+
+**bet** is used in [rhit](https://dystroy.org/rhit) to filter log lines.
+For example, with `rhit -p 'y & !( \d{4} | sp | bl )'`, you get stats on hits on paths containing "y" but neither a 4 digits number, "sp", nor "bl".
+
 # Example : parsing and evaluating boolean expressions
 
 Here we parse expressions like `"(A | B) & !(C | D | E)"` and evaluate them.
