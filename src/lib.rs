@@ -1,13 +1,14 @@
 /*!
-A simple binary expression tree, for parsing and preparing expressions which can be executed on dynamic contents.
+A library building and preparing expressions, for example boolean expressions such as `(A | B) & !(C | D | E)`,  which can be executed on dynamic contents.
 
-An expression is built by calling the `push_operator`, `open_par`, `close_par` and `push_atom` functions.
+An expression is built by sequentially pushing the parts: parenthesis, operators, atoms (the "variables").
+You do that by calling the `push_operator`, `open_par`, `close_par` and `push_atom` functions, which build the tree for you.
 
 It can then be evaluated with the `eval` function which takes as parameters
 
 * a function which gives a value to an atom
 * a function which, given an operator and one or two values, gives a new value
-* a function deciding whether to shortcut
+* a function deciding whether to short-circuit
 
 Normal evaluation order is left to right but is modified with parenthesis.
 

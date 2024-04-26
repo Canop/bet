@@ -14,7 +14,8 @@
 
 A library building and preparing expressions, for example boolean expressions such as `(A | B) & !(C | D | E)`,  which can be executed on dynamic contents.
 
-An expression is built by calling the `push_operator`, `open_par`, `close_par` and `push_atom` functions.
+An expression is built by sequentially pushing the parts: parenthesis, operators, atoms (the "variables").
+You do that by calling the `push_operator`, `open_par`, `close_par` and `push_atom` functions, which build the tree for you.
 
 It can then be evaluated with the `eval` function which takes as parameters
 
@@ -30,7 +31,7 @@ Normal evaluation order is left to right but is modified with parenthesis.
 
 **bet** is used in [rhit](https://dystroy.org/rhit) to filter log lines.
 
-**bet** is used in [lfs](https://dystroy.org/lfs) to filter filesystems.
+**bet** is used in [dysk](https://dystroy.org/dysk) to filter filesystems.
 
 **Usage and documentation: [docs.rs/bet](https://docs.rs/bet/)**
 
