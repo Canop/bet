@@ -67,7 +67,7 @@ For example, `!lock&(carg|c/carg/)` looks for files whose name or content contai
 
 For example, with `rhit -p 'y & !( \d{4} | sp | bl )'`, you get stats on hits on paths containing "y" but neither a 4 digits number, "sp", nor "bl".
 
-# Complet example : parsing and evaluating boolean expressions
+# Complete example : parsing and evaluating boolean expressions
 
 Here we parse expressions like `"(A | B) & !(C | D | E)"` and evaluate them.
 

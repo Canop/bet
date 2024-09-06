@@ -11,7 +11,10 @@ pub enum Child {
     Atom(AtomId),
 }
 impl Child {
+    pub fn is_none(self) -> bool {
+        matches!(self, Self::None)
+    }
     pub fn is_some(self) -> bool {
-        !matches!(self, Self::None)
+        !self.is_none()
     }
 }

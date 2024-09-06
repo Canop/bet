@@ -71,3 +71,15 @@ fn test_bool() {
     check("(T & T) | (T & F)", true);
     check("T & T | T & F", false);
 }
+
+#[test]
+fn issue_2() {
+    check("F | F | F", false);
+    check("F | F | F | F", false);
+    check("F | T | F", true);
+    check("F | T | F | F", true);
+    check("F | F & F", false);
+    check("F | F & F | F", false);
+    check("F | T & F", false);
+    check("F | T & F | F", false);
+}

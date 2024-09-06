@@ -178,10 +178,21 @@ where
     pub fn push_atom(&mut self, atom: Atom) {
         self.last_pushed = TokenType::Atom;
         let atom_idx = self.store_atom(atom);
-        if self.nodes[self.tail].left.is_some() {
-            self.nodes[self.tail].right = Child::Atom(atom_idx);
-        } else {
+        if self.nodes[self.tail].left.is_none() {
             self.nodes[self.tail].left = Child::Atom(atom_idx);
+            return;
+        }
+        let mut current = self.tail;
+        loop {
+            if self.nodes[current].right.is_none() {
+                self.nodes[current].right = Child::Atom(atom_idx);
+                return;
+            }
+            let Some(parent) = self.nodes[current].parent else {
+                // no parent for {current}, atom is useless
+                return;
+            };
+            current = parent;
         }
     }
 
@@ -247,6 +258,7 @@ where
         let Some(parent_idx) = self.nodes[new_idx].parent else {
             // the replaced node was the head
             self.head = new_idx;
+            self.tail = new_idx;
             return;
         };
         if self.nodes[parent_idx].left == Child::Node(self.tail) {
@@ -258,7 +270,6 @@ where
             self.nodes[parent_idx].right = Child::Node(new_idx);
         }
         // we connect the tail to the new node
-        //if let Child::Node(child_idx) = self.nodes[self.tail]I
         self.nodes[self.tail].parent = Some(new_idx);
         // and we update the tail
         self.tail = new_idx;
