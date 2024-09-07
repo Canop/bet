@@ -82,4 +82,5 @@ fn issue_2() {
     check("F | F & F | F", false);
     check("F | T & F", false);
     check("F | T & F | F", false);
+    check("F | F | T & F", false);
 }

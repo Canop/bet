@@ -305,8 +305,7 @@ where
     /// operator at this point (for example it makes no
     /// sense just after another operator)
     pub fn accept_binary_operator(&self) -> bool {
-        use TokenType::*;
-        matches!(self.last_pushed, Atom | ClosingPar)
+        matches!(self.last_pushed, TokenType::Atom | TokenType::ClosingPar)
     }
 
     /// tell whether it would make sense to push an atom
